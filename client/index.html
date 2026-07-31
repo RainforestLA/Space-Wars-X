@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0e17" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Space Wars X — Online multiplayer Spacewar! for up to 20 players" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <title>Space Wars X</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Landing -->
+      <section id="screen-landing" class="screen active">
+        <div class="stars-bg" aria-hidden="true"></div>
+        <div class="landing-wrap">
+          <div class="logo-block">
+            <canvas id="logo-canvas" width="280" height="120" aria-hidden="true"></canvas>
+            <h1 class="title">SPACE WARS X</h1>
+            <p class="tagline">Newtonian dogfights · Gravity wells · Up to 20 pilots</p>
+          </div>
+          <div class="card landing-card">
+            <label class="field">
+              <span>Callsign</span>
+              <input id="name-input" type="text" maxlength="16" placeholder="Pilot" autocomplete="nickname" />
+            </label>
+            <div class="btn-col">
+              <button id="btn-create" class="btn btn-primary btn-lg">Create Room</button>
+              <button id="btn-create-public" class="btn btn-secondary">Create Public Lobby</button>
+            </div>
+            <div class="divider"><span>or join</span></div>
+            <div class="join-row">
+              <input id="code-input" type="text" maxlength="6" placeholder="CODE" class="code-input" autocomplete="off" />
+              <button id="btn-join" class="btn btn-primary">Join</button>
+            </div>
+            <div class="lobbies-block">
+              <div class="lobbies-head">
+                <h3>Public Lobbies</h3>
+                <button id="btn-refresh-lobbies" class="btn btn-ghost btn-sm">Refresh</button>
+              </div>
+              <ul id="lobby-list" class="lobby-list"></ul>
+              <p id="lobby-empty" class="muted">No open lobbies — create one!</p>
+            </div>
+          </div>
+          <p class="hint-footer">Voice: say <strong>Photon</strong>, <strong>Laser</strong>, <strong>Shields</strong>, or <strong>Hyperspace</strong></p>
+        </div>
+      </section>
+
+      <!-- Lobby -->
+      <section id="screen-lobby" class="screen">
+        <div class="panel lobby-panel">
+          <header class="panel-header">
+            <div>
+              <h2>Lobby</h2>
+              <p class="room-code-line">
+                Room
+                <button id="copy-code" class="code-chip" title="Copy code">————</button>
+                <span id="copy-toast" class="toast hidden">Copied!</span>
+              </p>
+            </div>
+            <button id="btn-leave-lobby" class="btn btn-ghost">Leave</button>
+          </header>
+          <div class="lobby-grid">
+            <div class="lobby-players">
+              <h3>Pilots <span id="player-count" class="badge">0</span></h3>
+              <ul id="player-list" class="player-list"></ul>
+            </div>
+            <div class="lobby-settings">
+              <h3>Match Settings</h3>
+              <div id="host-settings" class="settings-block">
+                <label class="field">
+                  <span>Mode</span>
+                  <select id="mode-select">
+                    <option value="ffa">Free-for-All · Last Ship Standing</option>
+                    <option value="teams">Team Mode</option>
+                    <option value="training">Training · vs Computer</option>
+                  </select>
+                </label>
+                <p id="training-hint" class="muted sm" hidden>
+                  Vs Training Drone. 30s grace before it attacks. Solo OK.
+                </p>
+                <label class="field" id="team-count-field" hidden>
+                  <span>Teams</span>
+                  <select id="team-count">
+                    <option value="2">2 Teams</option>
+                    <option value="3">3 Teams</option>
+                    <option value="4">4 Teams</option>
+                  </select>
+                </label>
+                <div class="check-row">
+                  <label class="check-field">
+                    <input type="checkbox" id="public-check" />
+                    <span>Public lobby</span>
+                  </label>
+                  <label class="check-field" title="Asteroids break into drifting pieces when hit">
+                    <input type="checkbox" id="fragmenting-check" />
+                    <span>Fragmenting Asteroids</span>
+                  </label>
+                </div>
+                <button id="btn-map-editor" class="btn btn-secondary btn-block">Open Map Editor</button>
+                <button id="btn-start" class="btn btn-primary btn-lg btn-block">Start Match</button>
+              </div>
+              <div id="guest-settings" class="settings-block" hidden>
+                <p class="muted" id="guest-wait-msg">Waiting for host to configure the map and start…</p>
+                <div id="team-pick" class="team-pick" hidden></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Map Editor -->
+      <section id="screen-editor" class="screen">
+        <div class="editor-layout">
+          <aside class="editor-tools">
+            <h2>Map Editor</h2>
+            <p class="muted sm">Host only · session map</p>
+            <div class="tool-group">
+              <span class="tool-label">Place</span>
+              <button class="tool-btn active" data-tool="select">Select / Move</button>
+              <button class="tool-btn" data-tool="well">Gravity Well</button>
+              <button class="tool-btn" data-tool="asteroid">Asteroid</button>
+              <button class="tool-btn" data-tool="mover">Moving Asteroid</button>
+              <button class="tool-btn" data-tool="wormhole">Wormhole</button>
+            </div>
+            <div id="well-props" class="props-panel" hidden>
+              <h3>Gravity Well</h3>
+              <label class="field">
+                <span>Size <em id="well-radius-val">70</em></span>
+                <input type="range" id="well-radius" min="20" max="150" value="70" />
+              </label>
+              <label class="field">
+                <span>Strength <em id="well-str-val">1.2</em></span>
+                <input type="range" id="well-strength" min="-4" max="4" step="0.1" value="1.5" />
+              </label>
+              <label class="field">
+                <span>Style</span>
+                <select id="well-style">
+                  <option value="sun">Sun</option>
+                  <option value="blackhole">Black Hole</option>
+                </select>
+              </label>
+              <button id="btn-delete-obj" class="btn btn-danger btn-sm">Delete Selected</button>
+            </div>
+            <div id="generic-props" class="props-panel" hidden>
+              <button id="btn-delete-obj2" class="btn btn-danger btn-sm">Delete Selected</button>
+            </div>
+            <p id="well-limit" class="muted sm">Wells: 0 / 3</p>
+            <div class="editor-actions">
+              <button id="btn-editor-back" class="btn btn-ghost">Back to Lobby</button>
+              <button id="btn-editor-start" class="btn btn-primary">Start Match</button>
+            </div>
+          </aside>
+          <div class="editor-canvas-wrap">
+            <canvas id="editor-canvas"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Game -->
+      <section id="screen-game" class="screen">
+        <canvas id="game-canvas"></canvas>
+        <div id="hud" class="hud">
+          <div class="hud-top">
+            <div class="hud-left">
+              <span id="hud-alive" class="hud-pill">— alive</span>
+              <span id="hud-mode" class="hud-pill muted-pill">FFA</span>
+            </div>
+            <div class="hud-center">
+              <span id="hud-spectate" class="spectate-banner hidden">SPECTATING</span>
+            </div>
+            <div class="hud-right">
+              <span id="voice-status" class="hud-pill voice-pill" title="Voice recognition">🎤 …</span>
+            </div>
+          </div>
+          <div id="cooldown-bar" class="cooldown-bar">
+            <div class="cd" data-cd="photon">
+              <span class="cd-name">Photon</span>
+              <div class="cd-track"><div class="cd-fill" id="cd-photon"></div></div>
+            </div>
+            <div class="cd" data-cd="laser">
+              <span class="cd-name">Laser</span>
+              <div class="cd-track"><div class="cd-fill" id="cd-laser"></div></div>
+            </div>
+            <div class="cd" data-cd="shield">
+              <span class="cd-name">Shields</span>
+              <div class="cd-track"><div class="cd-fill" id="cd-shield"></div></div>
+            </div>
+            <div class="cd" data-cd="hyperspace">
+              <span class="cd-name">Hyper</span>
+              <div class="cd-track"><div class="cd-fill" id="cd-hyperspace"></div></div>
+            </div>
+          </div>
+          <div id="damage-pips" class="damage-pips" title="Laser damage"></div>
+        </div>
+        <!-- Mobile controls -->
+        <div id="mobile-controls" class="mobile-controls">
+          <div id="stick-rotate" class="stick-zone stick-left">
+            <div class="stick-base"><div class="stick-knob"></div></div>
+            <span class="stick-label">Rotate</span>
+          </div>
+          <button id="btn-thrust" class="thrust-btn">THRUST</button>
+        </div>
+        <div id="kill-feed" class="kill-feed"></div>
+      </section>
+
+      <!-- Results -->
+      <section id="screen-results" class="screen">
+        <div class="card results-card">
+          <h2 id="results-title">VICTORY IS YOURS!</h2>
+          <p id="results-sub" class="results-sub"></p>
+          <ul id="results-list" class="results-list"></ul>
+          <div class="btn-col">
+            <button id="btn-play-again" class="btn btn-primary btn-lg">Play Again</button>
+            <button id="btn-results-leave" class="btn btn-ghost">Leave Room</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Toast / errors -->
+      <div id="toast-global" class="toast-global hidden"></div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "socket.io-client": "https://cdn.socket.io/4.8.1/socket.io.esm.min.js"
+        }
+      }
+    </script>
+    <script type="module" src="/js/main.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
