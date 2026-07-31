@@ -1,0 +1,14 @@
+# Render Blueprint — deploy as a free Web Service (not Static Site)
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: space-wars-x
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
