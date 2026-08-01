@@ -327,15 +327,11 @@ export function createGameController(state, showScreen, toast) {
   function startVoice() {
     const statusEl = document.getElementById('voice-status');
     voice = createVoice((cmd) => {
-      const action = cmd === 'shield' ? 'shield' : cmd;
-      // Fire immediately — don't wait for the 30 Hz input poll
-      net.sendInput({ action });
-      input.queueAction(action); // backup if packet order races
+      input.queueAction(cmd === 'shield' ? 'shield' : cmd);
       statusEl.textContent = `🎤 ${cmd}`;
-      statusEl.className = 'hud-pill voice-pill on';
       setTimeout(() => {
         if (voice?.active) statusEl.textContent = '🎤 ON';
-      }, 500);
+      }, 600);
     });
     voice.setStatusHandler((s) => {
       if (s === 'listening') {
