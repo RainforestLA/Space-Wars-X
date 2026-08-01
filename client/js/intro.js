@@ -256,6 +256,34 @@ function setCaption(el, text) {
   el.classList.add('intro-caption-flash');
 }
 
+let mouthTimer = null;
+let talking = false;
+
+function startMouthAnim(portrait) {
+  if (!portrait) return;
+  talking = true;
+  portrait.classList.add('talking');
+  clearInterval(mouthTimer);
+  // Alternate open/closed ~5 times per second for speech-like lip flap
+  let open = false;
+  mouthTimer = setInterval(() => {
+    if (!talking) return;
+    open = !open;
+    // Slight randomness so it feels less mechanical
+    if (Math.random() < 0.15) open = true;
+    portrait.classList.toggle('mouth-open', open);
+  }, 90 + Math.floor(Math.random() * 40));
+}
+
+function stopMouthAnim(portrait) {
+  talking = false;
+  clearInterval(mouthTimer);
+  mouthTimer = null;
+  if (portrait) {
+    portrait.classList.remove('talking', 'mouth-open');
+  }
+}
+
 /**
  * Classic 16-bit Star Wars hyperspace POV:
  * stars streak from vanishing point toward the camera as bright pixel lines.
@@ -429,6 +457,7 @@ function finish(overlay, onDone) {
     speechSynthesis?.cancel();
   } catch (_) {}
   stopBgm();
+  stopMouthAnim(overlay?.querySelector?.('#commander-portrait'));
   if (stopDemo) {
     stopDemo();
     stopDemo = null;
@@ -457,6 +486,14 @@ export function playOpeningIntro(onDone) {
     <div class="intro-panel">
       <div class="intro-scanlines" aria-hidden="true"></div>
       <p class="intro-label">SPACE WARS X · INCOMING TRANSMISSION</p>
+      <div class="commander-wrap" aria-hidden="true">
+        <div class="commander-portrait" id="commander-portrait">
+          <img class="cmd-face cmd-closed" src="/assets/commander-closed.jpg" alt="" draggable="false" />
+          <img class="cmd-face cmd-open" src="/assets/commander-open.jpg" alt="" draggable="false" />
+          <div class="commander-frame"></div>
+        </div>
+        <p class="commander-rank">STAR COMMANDER</p>
+      </div>
       <p class="intro-caption" id="intro-caption">Example combat loading…</p>
       <button type="button" class="btn btn-primary intro-start-btn" id="intro-start">
         TAP TO RECEIVE
@@ -470,12 +507,13 @@ export function playOpeningIntro(onDone) {
   document.getElementById('app')?.appendChild(overlay);
 
   const canvas = overlay.querySelector('#intro-demo');
-  // Start silent demo backdrop immediately (no audio until tap)
+  // Hyperspace POV backdrop
   stopDemo = startDemoPlay(canvas);
 
   const caption = overlay.querySelector('#intro-caption');
   const startBtn = overlay.querySelector('#intro-start');
   const skipBtn = overlay.querySelector('#intro-skip');
+  const portrait = overlay.querySelector('#commander-portrait');
 
   const skip = () => {
     sessionStorage.setItem(INTRO_KEY, '1');
@@ -516,13 +554,16 @@ export function playOpeningIntro(onDone) {
     for (const line of LINES) {
       if (!active) break;
       setCaption(caption, line.text);
+      startMouthAnim(portrait);
       await speakLine(line.text);
+      stopMouthAnim(portrait);
       if (!active) break;
       // Short pause between segments so lines don't run together
       await new Promise((r) => setTimeout(r, GAP_AFTER_LINE_MS));
     }
 
     if (active) {
+      stopMouthAnim(portrait);
       setCaption(caption, 'TRANSMISSION COMPLETE · SPACE WARS X');
       setTimeout(() => finish(overlay, onDone), 800);
     }
